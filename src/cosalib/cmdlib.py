@@ -52,7 +52,7 @@ def run_verbose(args, **kwargs):
     :type kwargs: dict
     :raises: CalledProcessError
     """
-    print("+ {}".format(subprocess.list2cmdline(args)))
+    print(f"+ {subprocess.list2cmdline(args)}")
 
     # default to throwing exception
     if 'check' not in kwargs.keys():
@@ -66,7 +66,7 @@ def run_verbose(args, **kwargs):
     try:
         process = subprocess.run(args, **kwargs)
     except subprocess.CalledProcessError:
-        fatal("Error running command " + args[0])
+        fatal(f"Error running command {args[0]}")
     return process
 
 
@@ -90,13 +90,13 @@ def merge_dicts(x, y):
         for k, v in d.items():
             if k in sd:
                 # the key is only present in one dict, add it directly
-                ret.update({k: v})
+                ret[k] = v
             elif type(x[k]) == dict and type(y[k]) == dict:
                 # recursively merge
-                ret.update({k: merge_dicts(x[k], y[k])})
+                ret[k] = merge_dicts(x[k], y[k])
             else:
                 # first dictionary always takes precedence
-                ret.update({k: x[k]})
+                ret[k] = x[k]
     return ret
 
 
@@ -270,8 +270,20 @@ def import_ostree_commit(repo, buildpath, buildmeta, force=False):
         # to `repo-build`, though it might be good to change this by default.
         if os.environ.get('COSA_PRIVILEGED', '') == '1':
             build_repo = os.path.join(repo, '../../cache/repo-build')
-            subprocess.check_call(['sudo', 'rpm-ostree', 'ex-container', 'import', '--repo', build_repo,
-                                   '--write-ref', buildmeta['buildid'], 'ostree-unverified-image:oci-archive:' + tarfile])
+            subprocess.check_call(
+                [
+                    'sudo',
+                    'rpm-ostree',
+                    'ex-container',
+                    'import',
+                    '--repo',
+                    build_repo,
+                    '--write-ref',
+                    buildmeta['buildid'],
+                    f'ostree-unverified-image:oci-archive:{tarfile}',
+                ]
+            )
+
             subprocess.check_call(['sudo', 'ostree', f'--repo={repo}', 'pull-local', build_repo, buildmeta['buildid']])
             uid = os.getuid()
             gid = os.getgid()
@@ -279,8 +291,19 @@ def import_ostree_commit(repo, buildpath, buildmeta, force=False):
         else:
             with tempfile.TemporaryDirectory() as tmpd:
                 subprocess.check_call(['ostree', 'init', '--repo', tmpd, '--mode=bare-user'])
-                subprocess.check_call(['rpm-ostree', 'ex-container', 'import', '--repo', tmpd,
-                                       '--write-ref', buildmeta['buildid'], 'ostree-unverified-image:oci-archive:' + tarfile])
+                subprocess.check_call(
+                    [
+                        'rpm-ostree',
+                        'ex-container',
+                        'import',
+                        '--repo',
+                        tmpd,
+                        '--write-ref',
+                        buildmeta['buildid'],
+                        f'ostree-unverified-image:oci-archive:{tarfile}',
+                    ]
+                )
+
                 subprocess.check_call(['ostree', f'--repo={repo}', 'pull-local', tmpd, buildmeta['buildid']])
 
 
@@ -392,7 +415,7 @@ def flatten_image_yaml(srcfile, base=None):
 
 def ensure_glob(pathname, **kwargs):
     '''Call glob.glob(), and fail if there are no results.'''
-    ret = glob.glob(pathname, **kwargs)
-    if not ret:
+    if ret := glob.glob(pathname, **kwargs):
+        return ret
+    else:
         raise Exception(f'No matches for {pathname}')
-    return ret

@@ -207,9 +207,8 @@ def s3_copy(src, bucket, key, max_age, acl, extra_args={}, dry_run=False):
             extra_args['ContentType'] = 'application/octet-stream'
     upload_args = {
         'CacheControl': f'max-age={max_age}',
-        'ACL': acl
-    }
-    upload_args.update(extra_args)
+        'ACL': acl,
+    } | extra_args
 
     print((f"{'Would upload' if dry_run else 'Uploading'} {src} to "
            f"s3://{bucket}/{key} {extra_args if len(extra_args) else ''}"))

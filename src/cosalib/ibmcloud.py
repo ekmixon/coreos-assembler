@@ -55,7 +55,7 @@ class IBMCloudImage(QemuVariantImage):
 
     def __init__(self, **kwargs):
         variant = kwargs.pop("variant", "ibmcloud")
-        kwargs.update(VARIANTS.get(variant, {}))
+        kwargs |= VARIANTS.get(variant, {})
         QemuVariantImage.__init__(self, **kwargs)
         # Set the QemuVariant mutate_callback so that OVA is called.
         if variant == "powervs":
@@ -72,13 +72,11 @@ class IBMCloudImage(QemuVariantImage):
         image = f'{self.meta["name"]}-{self.meta["ostree-version"]}'
         image_description = f'{self.meta["name"]} {self.meta["summary"]} {self.meta["ostree-version"]}'
 
-        params = {
-            'image_description':   image_description,
-            'image':               image,
-            'image_size':          str(image_size),
+        return {
+            'image_description': image_description,
+            'image': image,
+            'image_size': str(image_size),
         }
-
-        return params
 
     def write_ova(self, image_name):
         """
@@ -178,11 +176,11 @@ def ibmcloud_run_ore_replicate(build, args):
     # only replicate to regions that don't already exist
     existing_regions = [item['region'] for item in ibmcloud_img_data]
     duplicates = list(set(args.region).intersection(existing_regions))
-    if len(duplicates) > 0:
+    if duplicates:
         print((f"Images already exist in {duplicates} region(s)"
                ", skipping listed region(s)..."))
     region_list = list(set(args.region) - set(duplicates))
-    if len(region_list) == 0:
+    if not region_list:
         print("no new regions detected")
         sys.exit(0)
 
@@ -216,7 +214,7 @@ def ibmcloud_run_ore_replicate(build, args):
     for upload_region in region_list:
         region_ore_args = ore_args.copy() + ['--destination-region', upload_region,
                                             '--destination-bucket', f"{bucket_prefix}-{upload_region}"]
-        print("+ {}".format(subprocess.list2cmdline(region_ore_args)))
+        print(f"+ {subprocess.list2cmdline(region_ore_args)}")
         try:
             subprocess.check_output(region_ore_args)
         except subprocess.CalledProcessError:
@@ -242,7 +240,6 @@ def ibmcloud_run_ore_replicate(build, args):
 
     if upload_failed_in_region is not None:
         raise Exception(f"Upload failed in {upload_failed_in_region} region")
-    pass
 
 
 def ibmcloud_cli(parser):

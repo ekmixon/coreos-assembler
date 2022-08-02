@@ -107,10 +107,11 @@ class Build(_Build):
         # Use a tempdir in builds/ because we want to use large scratch space
         self._tmpdir = tempfile.mkdtemp(prefix="koji-build", dir="builds/")
         self._state_file_tpl = self._tmpdir + "/cosa-cmd-koji-upload-{name}-{version}-{release}"
-        kwargs.update({
+        kwargs |= {
             "require_commit": True,
             "require_cosa": True,
-        })
+        }
+
         _Build.__init__(self, **kwargs)
 
     def __del__(self):
@@ -205,9 +206,7 @@ class Build(_Build):
         """
         (new_name, _) = self.decompress_mutator(fname)
         (new_name, _) = self.rename_mutator(new_name)
-        if fname != new_name:
-            return new_name
-        return fname
+        return new_name if fname != new_name else fname
 
     def supported_upload(self, fname):
         """
@@ -261,8 +260,9 @@ class Build(_Build):
                 continue
 
         # add the coreos assembler files
-        for ffile in os.listdir(COSA_INPATH):
-            files.append(os.path.join(COSA_INPATH, ffile))
+        files.extend(
+            os.path.join(COSA_INPATH, ffile) for ffile in os.listdir(COSA_INPATH)
+        )
 
         # process the files that were found
         for ffile in files:
@@ -530,10 +530,7 @@ class Upload(_KojiBase):
             del file_meta['extra']
             file_meta['type'] = etype
 
-        if description is None:
-            return None
-
-        return file_meta
+        return None if description is None else file_meta
 
     @property
     def image_files(self):
@@ -568,19 +565,7 @@ class Upload(_KojiBase):
         with the release time created for the build.
         Let's just replace the build_id and the release here, and let the further checks for Koji.
         """
-        if self._reserve_id_file is not None:
-            if os.path.isfile(self._reserve_id_file):
-                log.debug(f"loading reservation data from state file {self._reserve_id_file}")
-                data = load_json(self._reserve_id_file)
-                self._build_id = data[1]['build_id']
-                self._release = data[0]['release']
-                self._token = data[1]["token"]
-
-                self.build.meta['koji'] = {
-                    'build_id': self._build_id
-                }
-                self.build.meta_write()
-        else:
+        if self._reserve_id_file is None:
             try:
                 if self.build.meta['koji']['build_id'] is not None:
                     log.debug(f"loading reservation data from {self.build.meta['koji']}")
@@ -590,6 +575,17 @@ class Upload(_KojiBase):
             except:
                 pass
 
+        elif os.path.isfile(self._reserve_id_file):
+            log.debug(f"loading reservation data from state file {self._reserve_id_file}")
+            data = load_json(self._reserve_id_file)
+            self._build_id = data[1]['build_id']
+            self._release = data[0]['release']
+            self._token = data[1]["token"]
+
+            self.build.meta['koji'] = {
+                'build_id': self._build_id
+            }
+            self.build.meta_write()
         source = self.build.get_meta_key(
             "meta", self.build.ckey("container-config-git"))
 
@@ -663,7 +659,7 @@ class Upload(_KojiBase):
 
     def tag_build(self, nvr, tag):
         """ Tag build in Koji """
-        log.info('tagging %s into %s' % (nvr, tag))
+        log.info(f'tagging {nvr} into {tag}')
         task_id = self.session.tagBuild(tag, nvr)
         task_result = klib.watch_tasks(self.session, [task_id], poll_interval=15)
         if task_result != 0:
@@ -696,15 +692,14 @@ class Upload(_KojiBase):
         self._remote_directory = serverdir
 
         """ If the final Import fails retry it """
-        for attempt in range(0, self._retry_attempts):
+        for attempt in range(self._retry_attempts):
             try:
                 cginfo = self.session.CGImport(self.manifest, serverdir, token=self._token)
             except Exception as e:
                 if attempt < self._retry_attempts - 1:
                     continue
-                else:
-                    print(e)
-                    sys.exit()
+                print(e)
+                sys.exit()
             break
 
         log.info(json.dumps(cginfo, sort_keys=True, indent=3))

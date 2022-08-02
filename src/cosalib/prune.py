@@ -58,8 +58,7 @@ def fetch_build_meta(builds, buildid, arch, bucket, prefix):
         os.makedirs(build_dir, exist_ok=True)
         s3_key = f"{prefix}/{buildid}/{arch}/meta.json"
         print(f"Fetching meta.json for '{buildid}' from s3://{bucket}/{prefix} to {meta_json_path}")
-        head_result = head_object(bucket, s3_key)
-        if head_result:
+        if head_result := head_object(bucket, s3_key):
             print(f"Found s3 key at {s3_key}")
             download_file(bucket, s3_key, meta_json_path)
         else:
@@ -101,8 +100,7 @@ def delete_build(build, bucket, prefix, cloud_config, force=False):
             except Exception as e:
                 errors.append(e)
 
-    aliyun = build.images.get('aliyun')
-    if aliyun:
+    if aliyun := build.images.get('aliyun'):
         region_name = aliyun.get('name')
         aliyun_id = aliyun.get('hvm')
         if region_name and aliyun_id:
@@ -111,8 +109,7 @@ def delete_build(build, bucket, prefix, cloud_config, force=False):
             except Exception as e:
                 errors.append(e)
 
-    azure = build.images.get('azure')
-    if azure:
+    if azure := build.images.get('azure'):
         image = azure.get('image')
         resource_group = cloud_config.get('azure', {}).get('resource-group')
         auth = cloud_config.get('azure', {}).get('auth')
@@ -123,8 +120,7 @@ def delete_build(build, bucket, prefix, cloud_config, force=False):
             except Exception as e:
                 errors.append(e)
 
-    gcp = build.images.get('gcp')
-    if gcp:
+    if gcp := build.images.get('gcp'):
         gcp_image = gcp.get('image')
         json_key = cloud_config.get('gcp', {}).get('json-key')
         project = cloud_config.get('gcp', {}).get('project')
@@ -134,7 +130,7 @@ def delete_build(build, bucket, prefix, cloud_config, force=False):
             except Exception as e:
                 errors.append(e)
 
-    if len(errors) != 0:
+    if errors:
         print(f"Found errors when removing build {build.id}:")
         for e in errors:
             print(e)

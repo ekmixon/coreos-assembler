@@ -110,6 +110,8 @@ def test_import_ostree_commit(monkeypatch, tmpdir):
     repo_tmp = os.path.join(tmpdir, 'tmp')
     os.mkdir(repo_tmp)
 
+
+
     class monkeyspcheck_call:
         """
         Verifies each subprocess.check_call matches what is required.
@@ -121,19 +123,27 @@ def test_import_ostree_commit(monkeypatch, tmpdir):
                 assert args[0] == [
                     'ostree', 'init', '--repo', tmpdir, '--mode=archive']
             if self.check_call_count == 1:
-                assert args[0][0:2] == ['tar', '-C']
+                assert args[0][:2] == ['tar', '-C']
                 assert args[0][3:5] == ['-xf', './tarfile.tar']
             if self.check_call_count == 2:
-                assert args[0][0:4] == [
-                    'ostree', 'pull-local', '--repo', tmpdir]
+                assert args[0][:4] == [
+                    'ostree',
+                    'pull-local',
+                    '--repo',
+                    tmpdir,
+                ]
+
                 assert args[0][5] == 'commit'
             self.check_call_count += 1
+
 
     def monkeyspcall(*args, **kwargs):
         """
         Verifies suprocess.call matches what we need.
         """
         assert args[0] == ['ostree', 'show', '--repo', tmpdir, 'commit']
+
+    # Monkey patch the subprocess function
 
     # Monkey patch the subprocess function
     monkeypatch.setattr(subprocess, 'check_call', monkeyspcheck_call())
@@ -188,7 +198,6 @@ def test_merge_dicts(tmpdir):
     assert x[2] == m[2]
     assert m[3]["3a"] is True
     assert m[3]["3b"] == "found"
-
    # merge x into z
     m = cmdlib.merge_dicts(z, x)
     assert m[1] == "yup"

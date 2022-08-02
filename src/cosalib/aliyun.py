@@ -42,11 +42,11 @@ def aliyun_run_ore_replicate(build, args):
     # only replicate to regions that don't already exist
     existing_regions = [item['name'] for item in aliyun_img_data]
     duplicates = list(set(args.region).intersection(existing_regions))
-    if len(duplicates) > 0:
+    if duplicates:
         print((f"Images already exist in {duplicates} region(s)"
                ", skipping listed region(s)..."))
     region_list = list(set(args.region) - set(duplicates))
-    if len(region_list) == 0:
+    if not region_list:
         print("no new regions detected")
         sys.exit(0)
 
@@ -68,7 +68,7 @@ def aliyun_run_ore_replicate(build, args):
 
     for upload_region in region_list:
         region_ore_args = ore_args.copy() + [upload_region]
-        print("+ {}".format(subprocess.list2cmdline(region_ore_args)))
+        print(f"+ {subprocess.list2cmdline(region_ore_args)}")
         try:
             ore_data = json.loads(subprocess.check_output(region_ore_args))
         except subprocess.CalledProcessError:
@@ -99,10 +99,7 @@ def aliyun_run_ore(build, args):
     if args.force:
         ore_args.extend(['--force'])
 
-    region = "us-west-1"
-    if args.region is not None:
-        region = args.region[0]
-
+    region = args.region[0] if args.region is not None else "us-west-1"
     upload_name = f"{build.build_name}-{build.build_id}"
     if args.name_suffix:
         upload_name = f"{build.build_name}-{args.name_suffix}-{build.build_id}"

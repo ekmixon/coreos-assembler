@@ -52,16 +52,14 @@ def rpmostree_quote(s):
 def nevra_to_cache_branch(pkg):
     name = pkg[0]
 
-    epoch = "" if pkg[1] == "0" else pkg[1] + "_3A"
+    epoch = "" if pkg[1] == "0" else f"{pkg[1]}_3A"
     version = pkg[2]
     release = pkg[3]
     evr = epoch + version + "-" + release
 
     arch = rpmostree_quote(pkg[4])
 
-    cache_branch = "rpmostree/pkg/" + name + "/" + evr + "." + arch
-
-    return cache_branch
+    return f"rpmostree/pkg/{name}/{evr}.{arch}"
 
 
 if args.pkgcache:
@@ -111,10 +109,7 @@ scanned_builds = get_local_builds(builds_dir)
 scanned_builds = sorted(scanned_builds,
                         key=lambda x: x.timestamp,
                         reverse=True)
-scanned_builds_map = {}
-for build in scanned_builds:
-    scanned_builds_map[build.id] = build
-
+scanned_builds_map = {build.id: build for build in scanned_builds}
 new_builds = []
 builds_to_delete = []
 

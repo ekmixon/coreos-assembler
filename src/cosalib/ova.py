@@ -55,7 +55,7 @@ class OVA(QemuVariantImage):
 
     def __init__(self, **kwargs):
         variant = kwargs.pop("variant", "vmware")
-        kwargs.update(VARIANTS.get(variant, {}))
+        kwargs |= VARIANTS.get(variant, {})
         self.template_name = kwargs.pop('template')
         QemuVariantImage.__init__(self, **kwargs)
         # Set the QemuVariant mutate_callback so that OVA is called.
@@ -78,22 +78,20 @@ class OVA(QemuVariantImage):
         vendor = self.meta['name']
         version = self.meta['ostree-version']
 
-        params = {
-            'ovf_cpu_count':                    cpu,
-            'ovf_memory_mb':                    memory,
-            'vsphere_image_name':               image,
-            'vsphere_product_name':             product,
-            'vsphere_product_vendor_name':      vendor,
-            'vsphere_product_version':          version,
-            'vsphere_virtual_system_type':      system_type,
-            'vsphere_os_type':                  os_type,
-            'vsphere_scsi_controller_type':     scsi,
-            'vsphere_network_controller_type':  network,
-            'vmdk_capacity':                    disk_info.get("virtual-size"),
-            'vmdk_size':                        str(vmdk_size),
+        return {
+            'ovf_cpu_count': cpu,
+            'ovf_memory_mb': memory,
+            'vsphere_image_name': image,
+            'vsphere_product_name': product,
+            'vsphere_product_vendor_name': vendor,
+            'vsphere_product_version': version,
+            'vsphere_virtual_system_type': system_type,
+            'vsphere_os_type': os_type,
+            'vsphere_scsi_controller_type': scsi,
+            'vsphere_network_controller_type': network,
+            'vmdk_capacity': disk_info.get("virtual-size"),
+            'vmdk_size': str(vmdk_size),
         }
-
-        return params
 
     def write_ova(self, image_name):
         """

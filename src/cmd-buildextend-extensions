@@ -107,7 +107,7 @@ def create_yumrepo(repodir):
             cr.xml_parse_primary(primary_xml, do_files=False, pkgcb=cb)
             break
 
-    if len(pkglist) == 0:
+    if not pkglist:
         raise Exception("No RPMs found in output dir")
     return pkglist
 

@@ -36,13 +36,20 @@ def run_get_string(args):
 
 
 def run_verbose(args, **kwargs):
-    print("+ {}".format(subprocess.list2cmdline(args)))
+    print(f"+ {subprocess.list2cmdline(args)}")
     subprocess.check_call(args, **kwargs)
 
 
 def find_commit_from_oscontainer(repo):
     """Given an ostree repo, find exactly one commit object in it"""
-    o = subprocess.check_output(['find', repo + '/objects', '-name', '*.commit'], encoding='UTF-8').strip().split('\n')
+    o = (
+        subprocess.check_output(
+            ['find', f'{repo}/objects', '-name', '*.commit'], encoding='UTF-8'
+        )
+        .strip()
+        .split('\n')
+    )
+
     if len(o) > 1:
         raise SystemExit(f"Multiple commit objects found in {repo}")
     d, n = os.path.split(o[0])
@@ -55,7 +62,7 @@ def oscontainer_extract(containers_storage, tmpdir, src, dest,
                         tls_verify=True, ref=None, cert_dir="",
                         authfile=""):
     dest = os.path.realpath(dest)
-    subprocess.check_call(["ostree", "--repo=" + dest, "refs"])
+    subprocess.check_call(["ostree", f"--repo={dest}", "refs"])
 
     # FIXME: Today we use skopeo in a hacky way for this.  What we
     # really want is the equivalent of `oc image extract` as part of
@@ -69,11 +76,11 @@ def oscontainer_extract(containers_storage, tmpdir, src, dest,
         cmd.append('--tls-verify=false')
 
     if authfile != "":
-        cmd.append("--authfile={}".format(authfile))
+        cmd.append(f"--authfile={authfile}")
     if cert_dir != "":
-        cmd.append("--cert-dir={}".format(cert_dir))
-    tmp_tarball = tmpdir + '/container.tar'
-    cmd += ['copy', "docker://" + src, 'docker-archive://' + tmp_tarball]
+        cmd.append(f"--cert-dir={cert_dir}")
+    tmp_tarball = f'{tmpdir}/container.tar'
+    cmd += ['copy', f"docker://{src}", f'docker-archive://{tmp_tarball}']
     run_verbose(cmd)
     run_verbose(['tar', 'xf', tmp_tarball], cwd=tmpdir)
     os.unlink(tmp_tarball)
@@ -83,13 +90,12 @@ def oscontainer_extract(containers_storage, tmpdir, src, dest,
     # Some files/directories aren't writable, and this will cause permission errors
     subprocess.check_call(['find', '!', '-perm', '-u+w', '-exec', 'chmod', 'u+w', '{}', ';'], cwd=tmpdir)
 
-    repo = tmpdir + '/srv/repo'
+    repo = f'{tmpdir}/srv/repo'
     commit = find_commit_from_oscontainer(repo)
     print(f"commit: {commit}")
-    run_verbose(["ostree", "--repo=" + dest, "pull-local", repo, commit])
+    run_verbose(["ostree", f"--repo={dest}", "pull-local", repo, commit])
     if ref is not None:
-        run_verbose([
-            "ostree", "--repo=" + dest, "refs", '--create=' + ref, commit])
+        run_verbose(["ostree", f"--repo={dest}", "refs", f'--create={ref}', commit])
 
 
 # Given an OSTree repository at src (and exactly one ref) generate an

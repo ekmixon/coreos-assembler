@@ -42,7 +42,5 @@ def test_build_cli_additional_args():
         for expect in expected:
             if expect in action.option_strings:
                 expected.pop(expected.index(expect))
-    if len(expected) != 0:
-        pytest.fail(
-            'The following actions were missing: {}'.format(
-                ', '.join(expected)))
+    if expected:
+        pytest.fail(f"The following actions were missing: {', '.join(expected)}")

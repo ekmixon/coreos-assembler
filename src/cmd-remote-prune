@@ -4,6 +4,7 @@
     This script removes unreferenced builds from s3 bucket
 '''
 
+
 import argparse
 import sys
 import os
@@ -71,9 +72,9 @@ cloud_config = {
 
 error_during_pruning = False
 for unmatched_build_id in unreferenced_s3_builds:
-    # TODO: fetch arches from s3
-    build = fetch_build_meta(builds, unmatched_build_id, 'x86_64', args.bucket, args.prefix)
-    if build:
+    if build := fetch_build_meta(
+        builds, unmatched_build_id, 'x86_64', args.bucket, args.prefix
+    ):
         try:
             delete_build(build, args.bucket, args.prefix, cloud_config, args.force)
         except Exception as e:

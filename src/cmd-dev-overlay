@@ -67,7 +67,7 @@ if root.get_child("usr/etc/selinux"):
     opts = OSTree.RepoCheckoutAtOptions()
     opts.mode = OSTree.RepoCheckoutMode.USER
     opts.subpath = "/usr/etc/selinux"
-    dest = tmpd.name + "/" + opts.subpath
+    dest = f"{tmpd.name}/{opts.subpath}"
     os.makedirs(os.path.dirname(dest))
     repo.checkout_at(opts, AT_FDCWD, dest, rev, None)
     add_modifier.set_sepolicy(OSTree.SePolicy.new(Gio.File.new_for_path(tmpd.name)))

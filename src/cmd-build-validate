@@ -61,11 +61,7 @@ def validate_image(builddir, imgtype, data):
 builds = Builds()
 
 # default to latest build if not specified
-if args.build:
-    build = args.build
-else:
-    build = builds.get_latest()
-
+build = args.build or builds.get_latest()
 for arch in builds.get_build_arches(build):
     print(f"Validating build: {build}/{arch}")
     builddir = builds.get_build_dir(build, arch)

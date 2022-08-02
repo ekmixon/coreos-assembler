@@ -22,12 +22,13 @@ from cosalib.cmdlib import run_verbose, sha256sum_file, flatten_image_yaml
 from cosalib.cmdlib import import_ostree_commit, get_basearch, ensure_glob
 from cosalib.meta import GenericBuildMeta
 
-live_exclude_kargs = set([
-    '$ignition_firstboot',   # unsubstituted variable in grub config
-    'console',               # no serial console by default on ISO
-    'ignition.platform.id',  # we hardcode "metal"
-    'ostree',                # dracut finds the tree automatically
-])
+live_exclude_kargs = {
+    '$ignition_firstboot',
+    'console',
+    'ignition.platform.id',
+    'ostree',
+}
+
 
 # Parse args and dispatch
 parser = argparse.ArgumentParser()
@@ -84,7 +85,7 @@ name_version = f'{base_name}-{args.build}'
 # The short volume ID can only be 32 characters (bytes probably).  We may in the future want
 # to shorten this more intelligently, otherwise we truncate the
 # version which may impede uniqueness.
-volid = name_version[0:32]
+volid = name_version[:32]
 
 tmpdir = os.environ.get("FORCE_TMPDIR", f"{workdir}/tmp/buildpost-live")
 if os.path.isdir(tmpdir):
@@ -144,10 +145,7 @@ def mkinitrd_pipe(tmproot, destf, compress=True):
     cpioproc = subprocess.Popen(['cpio', '-o', '-H', 'newc', '-R', 'root:root',
             '--quiet', '--reproducible', '--force-local', '--null',
             '-D', tmproot], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    if compress:
-        gzipargs = ['gzip', '-9']
-    else:
-        gzipargs = ['cat']
+    gzipargs = ['gzip', '-9'] if compress else ['cat']
     gzipproc = subprocess.Popen(gzipargs, stdin=cpioproc.stdout, stdout=destf)
     cpioproc.stdin.write(b'\0'.join(file_list))
     cpioproc.stdin.close()
@@ -172,22 +170,26 @@ def make_stream_hash(src, dest):
     bufsize = 2 * 1024 * 1024
     with open(src, 'rb') as inf:
         with open(dest, 'w') as outf:
-            outf.write('stream-hash sha256 {}\n'.format(bufsize))
+            outf.write(f'stream-hash sha256 {bufsize}\n')
             while True:
-                buf = inf.read(bufsize)
-                if not buf:
+                if buf := inf.read(bufsize):
+                    outf.write(hashlib.sha256(buf).hexdigest() + '\n')
+                else:
                     break
-                outf.write(hashlib.sha256(buf).hexdigest() + '\n')
 
 
 def file_offset_in_iso(isoinfo, filename):
     # -rw-rw-r--   1 1750 1750       553961457 Sep 18 2019 [   4733 00]  filename
     #                           match the logical block number ^^^^ ||
     #                                          file type, always 00 ^^
-    matches = list(re.finditer(r'\[\s*([0-9]+) 00\]\s+{}\s*$'.format(filename),
-                   isoinfo, re.MULTILINE))
+    matches = list(
+        re.finditer(
+            f'\[\s*([0-9]+) 00\]\s+{filename}\s*$', isoinfo, re.MULTILINE
+        )
+    )
+
     if len(matches) != 1:
-        raise Exception('Found {} copies of {}'.format(len(matches), filename))
+        raise Exception(f'Found {len(matches)} copies of {filename}')
     return int(matches[0].group(1)) * 2048  # assume 2 KB per logical block
 
 

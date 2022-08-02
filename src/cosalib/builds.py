@@ -55,12 +55,10 @@ class Builds:  # pragma: nocover
             raise SystemExit(err)
 
     def _path(self, path):
-        if not self._workdir:
-            return path
-        return os.path.join(self._workdir, path)
+        return os.path.join(self._workdir, path) if self._workdir else path
 
     def has(self, build_id):
-        return any([b['id'] == build_id for b in self._data['builds']])
+        return any(b['id'] == build_id for b in self._data['builds'])
 
     def is_empty(self):
         return len(self._data['builds']) == 0
@@ -130,19 +128,19 @@ class Builds:  # pragma: nocover
         genver_key = 'coreos-assembler.image-genver'
         if not self.is_empty():
             previous_buildid = parent_build or self.get_latest()
-            metapath = self.get_build_dir(previous_buildid) + '/meta.json'
+            metapath = f'{self.get_build_dir(previous_buildid)}/meta.json'
             with open(metapath) as f:
                 previous_buildmeta = json.load(f)
             previous_commit = previous_buildmeta['ostree-commit']
-            previous_image_genver = int(previous_buildmeta[genver_key])
             if previous_commit == ostree_commit:
+                previous_image_genver = int(previous_buildmeta[genver_key])
                 image_genver = previous_image_genver + 1
                 buildid = f"{version}-{image_genver}"
         meta = {
             'buildid': buildid,
             genver_key: image_genver
         }
-        with open(destdir + '/meta.json', 'w') as f:
+        with open(f'{destdir}/meta.json', 'w') as f:
             json.dump(meta, f)
 
     def bump_timestamp(self):

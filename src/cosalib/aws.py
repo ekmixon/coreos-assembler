@@ -45,23 +45,26 @@ def aws_run_ore_replicate(build, args):
     # only replicate to regions that don't already exist
     existing_regions = [item['name'] for item in buildmeta['amis']]
     duplicates = list(set(args.region).intersection(existing_regions))
-    if len(duplicates) > 0:
+    if duplicates:
         print((f"AMIs already exist in {duplicates} region(s), "
                "skipping listed region(s)..."))
 
     region_list = list(set(args.region) - set(duplicates))
-    if len(region_list) == 0:
+    if not region_list:
         print("no new regions detected")
         sys.exit(0)
 
     if not args.source_region:
         args.source_region = buildmeta['amis'][0]['name']
 
-    source_image = None
-    for a in buildmeta['amis']:
-        if a['name'] == args.source_region:
-            source_image = a['hvm']
-            break
+    source_image = next(
+        (
+            a['hvm']
+            for a in buildmeta['amis']
+            if a['name'] == args.source_region
+        ),
+        None,
+    )
 
     if source_image is None:
         raise Exception(("Unable to find AMI ID for "
@@ -75,7 +78,7 @@ def aws_run_ore_replicate(build, args):
         source_image, '--region', args.source_region
     ])
     ore_args.extend(region_list)
-    print("+ {}".format(subprocess.list2cmdline(ore_args)))
+    print(f"+ {subprocess.list2cmdline(ore_args)}")
 
     try:
         ore_data = subprocess.check_output(ore_args, encoding='utf-8')
@@ -132,7 +135,7 @@ def aws_run_ore(build, args):
     for user in args.grant_user_snapshot:
         ore_args.extend(['--grant-user-snapshot', user])
 
-    print("+ {}".format(subprocess.list2cmdline(ore_args)))
+    print(f"+ {subprocess.list2cmdline(ore_args)}")
     ore_data = json.loads(subprocess.check_output(ore_args))
 
     # This matches the Container Linux schema:

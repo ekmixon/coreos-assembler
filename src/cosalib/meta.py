@@ -259,14 +259,13 @@ class GenericBuildMeta(GenericMeta):
     def __init__(self, workdir=None, build='latest',
                  basearch=None, schema=SCHEMA_PATH):
         builds = Builds(workdir)
-        if build != "latest":
-            if not builds.has(build):
-                raise Exception('Build was not found in builds.json')
-        else:
+        if build == "latest":
             build = builds.get_latest()
 
+        elif not builds.has(build):
+            raise Exception('Build was not found in builds.json')
         self._build_dir = \
-            builds.get_build_dir(build,
+                builds.get_build_dir(build,
                                  basearch=basearch)
         path = os.path.join(self._build_dir, 'meta.json')
         super().__init__(schema=schema, path=path)

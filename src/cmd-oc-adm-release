@@ -96,10 +96,7 @@ def release_stream(meta, args, ocp_ver):
     tags = json.loads(run_verbose(tag_cmd, capture_output=True).stdout)
 
     log.info(f"Looking for latest release tag for {ocp_ver}")
-    ctags = []
-    for tag in tags["Tags"]:
-        if ocp_ver in tag and args.arch in tag:
-            ctags.append(tag)
+    ctags = [tag for tag in tags["Tags"] if ocp_ver in tag and args.arch in tag]
     sctags = sorted(ctags)
     log.info(f"Generating release payload from tag {sctags[-1]}")
     return f"{args.from_url}:{sctags[-1]}"

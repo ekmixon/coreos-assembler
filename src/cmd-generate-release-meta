@@ -53,10 +53,7 @@ args = parser.parse_args()
 def gather_buildmeta_from_workdir():
     builds = Builds()
     # default to latest build if not specified
-    if args.build_id:
-        buildid = args.build_id
-    else:
-        buildid = builds.get_latest()
+    buildid = args.build_id or builds.get_latest()
     print(f"Creating release.json for build {buildid}")
     base_builddir = f"builds/{buildid}"
     arches = builds.get_build_arches(buildid)

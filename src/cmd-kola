@@ -46,7 +46,7 @@ kolaargs = ['kola']
 r = re.compile("-p(=.+)?|--platform(=.+)?")
 platformargs = list(filter(r.match, unknown_args))
 
-if os.getuid() != 0 and len(platformargs) == 0:
+if os.getuid() != 0 and not platformargs:
     kolaargs.extend(['-p', 'qemu-unpriv'])
 
 if args.build is not None:
@@ -60,7 +60,7 @@ kolaargs.extend(unknown_args)
 if args.basic_qemu_scenarios:
     if arch == "x86_64":
         for scenario in BASIC_SCENARIOS:
-            subargs = kolaargs + ['--qemu-' + scenario, 'basic']
+            subargs = kolaargs + [f'--qemu-{scenario}', 'basic']
             print(subprocess.list2cmdline(subargs), flush=True)
             subprocess.check_call(subargs)
     else:

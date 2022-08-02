@@ -55,14 +55,17 @@ else:
         args.name = buildmeta['name']
 
 if args.instid is None:
-    args.instid = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(8)])
+    args.instid = ''.join(
+        [random.choice(string.ascii_letters + string.digits) for _ in range(8)]
+    )
+
 
 ignvol = f"{args.name}-ign-{args.instid}"
 ignsize = os.path.getsize(args.ignition)
 
 vconn = libvirt.open(args.connect)
 if vconn is None:
-    raise Exception('Failed to connect to libvirt "{}"'.format(args.connect))
+    raise Exception(f'Failed to connect to libvirt "{args.connect}"')
 
 basevolname = os.path.basename(qemupath)
 
@@ -78,10 +81,8 @@ def get_pool_path(connect, pool):
     poolxml = subprocess.check_output(['virsh', '-c', connect, 'pool-dumpxml', pool], encoding='UTF-8')
     r = re.compile(re.escape("<path>") + "(.*)" + re.escape("</path>"))
     for line in poolxml.split():
-        m = r.search(line)
-        if not m:
-            continue
-        return m.group(1)
+        if m := r.search(line):
+            return m[1]
     raise Exception(f"Failed to find path for pool: {pool}")
 
 

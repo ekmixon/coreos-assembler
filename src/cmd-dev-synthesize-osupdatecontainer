@@ -21,7 +21,7 @@ parser.add_argument("--percentage", help="Approximate percentage of files to upd
 args = parser.parse_args()
 
 with tempfile.TemporaryDirectory(prefix='cosa-dev-synth-update') as tmpd:
-    repo = tmpd + '/repo'
+    repo = f'{tmpd}/repo'
     repoarg = f'--repo={repo}'
     subprocess.check_call(['ostree', repoarg, 'init', '--mode=archive'])
     # This is a temp repo

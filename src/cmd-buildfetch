@@ -55,13 +55,12 @@ def main():
                                                stdout=subprocess.DEVNULL,
                                                stderr=subprocess.DEVNULL) != 0
             if havelocalchanges:
-                if args.force:
-                    print(f"Detected local modifications to {BUILDFILES['list']}")
-                    print("Forcing update as requested by --force")
-                else:
+                if not args.force:
                     raise SystemExit(f"{BUILDFILES['list']} modified locally. "
                                      "Run with --force to overwrite local changes")
 
+                print(f"Detected local modifications to {BUILDFILES['list']}")
+                print("Forcing update as requested by --force")
         # Download builds.json to local builds.json
         fetcher.fetch('builds.json', dest=BUILDFILES['list'])
         print(f"Updated {BUILDFILES['list']}")

@@ -51,12 +51,16 @@ def main():
     builds = None
     if fetcher.exists('builds.json'):
         if not args.refresh:
-            if os.path.isfile(BUILDFILES['sourcedata']):
-                # If we have local builds, don't overwrite that by default.
-                if subprocess.call(['cmp', BUILDFILES['sourcedata'], BUILDFILES['list']],
-                                   stdout=subprocess.DEVNULL,
-                                   stderr=subprocess.DEVNULL) != 0:
-                    raise SystemExit(f"{BUILDFILES['list']} modified locally, run with --refresh")
+            if (
+                os.path.isfile(BUILDFILES['sourcedata'])
+                and subprocess.call(
+                    ['cmp', BUILDFILES['sourcedata'], BUILDFILES['list']],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                != 0
+            ):
+                raise SystemExit(f"{BUILDFILES['list']} modified locally, run with --refresh")
             fetcher.fetch_json('builds.json')
         else:
             fetcher.fetch('builds.json', dest=BUILDFILES['sourcedata'])

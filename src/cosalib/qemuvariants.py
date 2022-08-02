@@ -152,9 +152,8 @@ class QemuVariantImage(_Build):
         used.
         """
         self._image_name = None
-        variant = kwargs.pop("variant", False)
-        if variant:
-            kwargs.update(VARIANTS.get(variant, {}))
+        if variant := kwargs.pop("variant", False):
+            kwargs |= VARIANTS.get(variant, {})
         self.image_format = kwargs.pop("image_format", "raw")
         self.image_suffix = kwargs.pop("image_suffix", self.image_format)
         self.convert_options = kwargs.pop("convert_options", {})
@@ -252,7 +251,7 @@ class QemuVariantImage(_Build):
 
         if self.mutate_callback:
             log.info("Processing work image callback")
-            meta_patch.update(self.mutate_callback(work_img) or {})
+            meta_patch |= (self.mutate_callback(work_img) or {})
 
         if self.tar_members:
             # Python does not create sparse Tarfiles, so we have do it via
@@ -264,9 +263,10 @@ class QemuVariantImage(_Build):
                 # `disk.raw` or `disk.vmdk`.  When creating a tarball, we
                 # rename the disk to the in-tar name if the name does not
                 # match the default naming.
-                if member_name.endswith(('.raw', '.vmdk')):
-                    if member_name != os.path.basename(work_img):
-                        shutil.move(work_img, os.path.join(self._tmpdir, member_name))
+                if member_name.endswith(
+                    ('.raw', '.vmdk')
+                ) and member_name != os.path.basename(work_img):
+                    shutil.move(work_img, os.path.join(self._tmpdir, member_name))
                 tarlist.append(member_name)
 
             tar_cmd = ['tar', '--owner=0', '--group=0', '-C', self._tmpdir]
@@ -314,4 +314,4 @@ class QemuVariantImage(_Build):
         imgs[self.platform] = img_meta
         self.meta_write(artifact_name=self.platform_image_name)
         if self.compress:
-            subprocess.check_call(['cosa', 'compress', '--artifact=' + self.platform])
+            subprocess.check_call(['cosa', 'compress', f'--artifact={self.platform}'])

@@ -105,7 +105,7 @@ def get_request_topic(request_type, environment):
 
 
 def get_request_finished_topic(request_type, environment):
-    return get_request_topic(request_type, environment) + '.finished'
+    return f'{get_request_topic(request_type, environment)}.finished'
 
 
 def send_message(config, topic, body):

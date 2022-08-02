@@ -82,12 +82,11 @@ class _Build:
         """
         build = kwargs.get("build", "latest")
         builds = Builds(os.path.dirname(build))
-        if build != "latest":
-            if not builds.has(build):
-                raise BuildError("Build was not found in builds.json")
-        else:
+        if build == "latest":
             build = builds.get_latest()
 
+        elif not builds.has(build):
+            raise BuildError("Build was not found in builds.json")
         self._basearch = kwargs.get("arch", None) or BASEARCH
         log.info("Targeting architecture: %s", self.basearch)
         log.info("Targeting build: %s", build)
@@ -144,8 +143,7 @@ class _Build:
 
     def __del__(self):
         try:
-            tmpdir = getattr(self, "_tmpdir", None)
-            if tmpdir:
+            if tmpdir := getattr(self, "_tmpdir", None):
                 shutil.rmtree(tmpdir)
 
         except Exception as e:
@@ -160,8 +158,7 @@ class _Build:
         """
         if self._workdir is not None:
             shutil.rmtree(self._workdir)
-            log.info(
-                'Removed temporary work directory at {}'.format(self.workdir))
+            log.info(f'Removed temporary work directory at {self.workdir}')
 
     def set_token(self):
         """
@@ -181,8 +178,7 @@ class _Build:
         """
         Clear the build sempahore
         """
-        tf = getattr(self, "_token_file", None)
-        if tf:
+        if tf := getattr(self, "_token_file", None):
             os.unlink(tf)
 
     @property
@@ -282,7 +278,7 @@ class _Build:
         :type var: str
         :returns: str
         """
-        return "coreos-assembler.%s" % var
+        return f"coreos-assembler.{var}"
 
     def __file(self, var):
         """
@@ -295,10 +291,11 @@ class _Build:
         :raises: KeyError
         """
         lookup = {
-            "commit": "%s/commitmeta.json" % self.build_dir,
-            "config": ("%s/coreos-assembler-config-git.json" % self.build_dir),
+            "commit": f"{self.build_dir}/commitmeta.json",
+            "config": f"{self.build_dir}/coreos-assembler-config-git.json",
             "image": "/cosa/coreos-assembler-git.json",
         }
+
         return lookup[var]
 
     def __get_json(self, name):
@@ -315,8 +312,7 @@ class _Build:
         try:
             return load_json(file_path, require_exclusive=False)
         except FileNotFoundError:
-            e = self._exceptions.get(name)
-            if e:
+            if e := self._exceptions.get(name):
                 raise e(f"{file_path} is required")
             else:
                 return {}
@@ -341,8 +337,7 @@ class _Build:
         try:
             return lookup[key]
         except Exception:
-            raise BuildError(
-                "invalid key %s, valid keys are %s" % (key, lookup.keys()))
+            raise BuildError(f"invalid key {key}, valid keys are {lookup.keys()}")
 
     def get_meta_key(self, obj, key):
         """
@@ -446,9 +441,7 @@ class _Build:
 
     @property
     def have_artifact(self):
-        if os.path.exists(self.image_path):
-            return True
-        return False
+        return bool(os.path.exists(self.image_path))
 
     def get_artifact_meta(self):
         """Get the artifact's metadata"""
